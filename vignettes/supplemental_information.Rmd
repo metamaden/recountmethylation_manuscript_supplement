@@ -33,7 +33,7 @@ knitr::opts_chunk$set(echo = TRUE, eval = TRUE, warning = FALSE,
 
 ## Sample identification
 
-We identified DNA methylation (DNAm) array samples published to the Gene Expression Omnibus (GEO) and available in the GEO Data Sets database as of March 31, 2019. We used the Entrez Utilities software (v.10.9) to quantify DNAm array sample availability by year and platform for 3 major Illumina BeadArray platforms (HM450K, HM27K, and EPIC/HM850K, Figures 1 and S1, see script `edirect_query.py`).
+We identified DNA methylation (DNAm) array samples published to the Gene Expression Omnibus (GEO) and available in the GEO Data Sets database as of March 31, 2019. We used the Entrez Utilities software (v.10.9) to quantify DNAm array sample availability by year and platform for 3 major Illumina BeadArray platforms (HM450K, HM27K, and EPIC/HM850K, Figures 1 and S1, see script `eqplot.py`).
 
 ## Data acquisition
 
@@ -58,19 +58,19 @@ R/Bioc package.
 
 # Sample metadata
 
-Metadata preprocessing and postprocessing was preformed for downloaded GSE SOFT files, which 
-resulted in the metadata table used for manuscript analyses (Table S1, see below).
+Metadata preprocessing and postprocessing was performed for downloaded GSE SOFT files, which 
+resulted in the metadata table used for manuscript analyses (Table S1, see [`metadata` directory and `md_postprocessing.R` script in the repo](https://github.com/metamaden/recountmethylation_manuscript_supplement/tree/master/inst/extdata/metadata)).
 
 ## Preprocessing -- GSE-wise annotations
 
 Preprocessing was performed on free text tags and labels extracted from sample characteristics 
 columns in the GSE SOFT files. This was preformed on a GSE-wise basis, where the most frequent 
-and informative labels were retained. Care was taken to retain only sample-specific information.
+and informative labels were retained. Care was taken to retain only sample-specific information (see file `md-preprocess.rda`).
 
 ## Postprocessing -- Learning formatted labels with regular expressions
 
 Preprocessed metadata were postprocessed by string pattern matching with regular expressions
-(see script `md_postprocessing.R`). Labels were applied hierarchically, wherein specific 
+(Table S1, see file `md-postprocess.rda` and script `md_postprocessing.R`). Labels were applied hierarchically, wherein specific 
 labels have general labels applied automatically and separated by semicolons. Resulting labels 
 are all lowercase, and underscores replace spaces for applicable labels. For example, a label of "Peripheral blood" is converted into "peripheral_blood;blood".
 
@@ -95,11 +95,11 @@ for sample GSM937258 was:
 
 JSON files were run using a [fork](https://github.com/metamaden/MetaSRA-pipeline) 
 of the MetaSRA-pipeline software [repo](https://github.com/deweylab/MetaSRA-pipeline)
-(@bernstein_metasra:_2017). This produces mapped ontology term labels and predictions 
-for a series of sample types (Figure S2). The most likely sample types were retained under the 
+(@bernstein_metasra:_2017). This produced mapped ontology term labels and predictions 
+for a series of sample types (Figure S2, see file `mdmap-gsm_35k.rda`). The most likely sample types were retained under the 
 "sampletype" column in the postprocessed metadata. For applicable samples, cell line 
 annotations were appended from the [Cellosaurus](https://web.expasy.org/cellosaurus/) 
-resource (see below).
+resource (see file `ccformat.txt`).
 
 ## DNAm model-based predictions
 
@@ -107,7 +107,7 @@ We performed model-based predictions of sex, age, and cell type fractions using 
 
 ## Metadata column descriptions
 
-Descriptions of the sample metadata columns (Table S1) are as follows:
+Descriptions of the sample metadata columns (Table S1, file `md-postprocess.rda`) are as follows:
 
 1. gsm : Sample record
 2. gsm_title : Sample record title

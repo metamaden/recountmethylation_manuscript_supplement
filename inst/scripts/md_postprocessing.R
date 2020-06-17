@@ -9,15 +9,18 @@
 # 5. add negative match check for disease status (e.g. excludes "non-cancer" from "cancer" search)
 
 library(data.table)
-load("md-gsm_allmd.rda") # coerced, partially annotated metadata
-nct = fread("dfgse_nct.csv", sep = ',', header = T)
-md = mdall.new
 
+load("md-preprocess.rda") # coerced, partially annotated metadata
+load("mdmap-gsm_35k.rda") # MetaSRA-pipeline, mapped and predicted labels
+ccf = fread('ccformat.txt', sep = ' ', header = T) # formatted Cellosaurus records
+load("prepmd.rda") # storage procedure annotations
+
+md = md.preprocess
 mdpost = md[,c(1, 2, 3)]
-nfn = "mdpost_all-gsm-md.rda" # new file name
+nfn = "md-postprocess.rda" # new file name
 mdpost$sampletype = mdpost$tissue = mdpost$disease = "NA"
-mdpost$arrayid_full = paste0(mdall.new$array_id, "_", mdall.new$sentrix_id)
-mdpost$basename = mdall.new$basename
+mdpost$arrayid_full = paste0(md$array_id, "_", md$sentrix_id)
+mdpost$basename = md$basename
 
 #-----------------
 # helper functions
@@ -375,7 +378,6 @@ save(mdpost, file = nfn)
 # Note: borrows heavily from types studied in TCGA
 # Note: sped up by excluding 'nfilt = T' (less likely issue for specific-subtype details)
 whichvar = c("gsm_title", "tissuevar", "disease_state", "anatomic_location")
-
 {
   # Cancer tissue types
   {
@@ -907,8 +909,6 @@ save(mdpost, file = nfn)
 #-----------------------------------
 # append high-confidence meta-sra pipeline sample type predictions
 {
-  #load("mdmap-gsm_35k.rda")
-  #predthresh = 0.80
   gsmid = mdmap$gsmid
   stype = gsub("'", "",
                gsub(";.*", "",
@@ -916,11 +916,6 @@ save(mdpost, file = nfn)
   spred = as.numeric(gsub("'", "",
                           gsub(";.*", "",
                                gsub("^.*'sample-type confidence':", "", mdmap$msrap_flatjson))))
-  #summary(spred)
-  # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
-  # 0.3088  0.5516  0.6985  0.7073  0.8552  1.0000
-  #length(spred[spred >= predthresh]) # 13549
-
   dfmd = data.frame(gsm = gsmid,
                     type = stype,
                     pred = round(as.numeric(spred), digits = 3),
@@ -946,9 +941,6 @@ save(mdpost, file = nfn)
 # Note: references files described/generated from 'md_cell-lines.R'
 # Note: include the mined cell line name with tag "namem:"
 {
-  # get cellosaurus data
-  ccf = fread('./data/ccdata/ccformat.txt', sep = ' ', header = T) # all extracted cell line records
-
   # get the most common cell line types from 'misc'
   mdst = rep("NA", nrow(md))
   miscdat = md$misc;
@@ -957,13 +949,10 @@ save(mdpost, file = nfn)
                     "NA")
   cll = cll[!cll=="NA"]
   cllf = cll[cll %in% ccf$ID]
-  length(cllf)
-  # [1] 1062
-
+  # length(cllf) # [1] 1062
   # filt cellosaurus
   ccff = ccf[ccf$ID %in% cllf,]
   ccff$CA = tolower(substr(ccff$CA, 4, nchar(ccff$CA))) # fix group
-
   # assign info
   for(r in 1:nrow(ccff)){
     dati = as.character(ccff[r,])
@@ -988,18 +977,13 @@ save(mdpost, file = nfn)
   xt = as.data.frame(table(unlist(strsplit(md$misc,";")))); xt = xt[rev(order(xt[,2])),]
   aiterms = xt[grepl(".*age_info.*", xt[,1]), 1]
   agedat = md$age
-
   # format mined age
   {
     af = md$age # original value
     aqvar = "age_info"
     af = gsub("\\..*", "", gsub(" ", "", gsub(aqvar, "", af))) # rm units, spaces, decimals
     af = ifelse(nchar(af) > 2 | nchar(af) == 0, "NA", af) # filter invalid entries
-    summary(as.numeric(af))
-    # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's
-    # 0.00   18.00   40.00   39.54   60.00   99.00   18850
   }
-
   # age units
   {
     miscdat = md$misc; mdst = rep("", nrow(md))
@@ -1035,12 +1019,7 @@ save(mdpost, file = nfn)
       mdst[i] = aui
       message(i)
     }
-    table(mdst)
-    # mdst
-    # unit:months  unit:weeks  unit:years
-    # 28654          71         268        6367
   }
-
   # add mined info as 'infom'
   {
     vstr = 'infom:'
@@ -1057,7 +1036,6 @@ save(mdpost, file = nfn)
                                      ifelse(grepl(ipr, di), paste0(vstr, "prepubescent"), ""))))
     }
   }
-
   # export for predage inference
   {
     mdage = mdpost
@@ -1065,11 +1043,8 @@ save(mdpost, file = nfn)
     mdage$age = ifelse(!mdst=="", paste(mdage$age, mdst, sep = ";"), mdage$age)
     mdage$age = ifelse(!mdsi == "", paste(mdage$age, mdsi, sep = ";"), mdage$age)
     mdage$predage = md$predage
-
   }
-
   save(mdage, file = "mdage.rda")
-
 }
 
 # make final age var
@@ -1089,12 +1064,6 @@ save(mdpost, file = nfn)
 #----------------
 {
   mdpost$sex = "NA"
-  table(md$gender)
-
-  # chromosomal abnormality from sex
-  table(get_filt(get_pstr(c("XXX", "XXY")), varl = "gender"))
-  # FALSE  TRUE
-  # 35350    10
   mdpost$disease = appendvar("disease",
                              "chromosomal_abnormality",
                              get_filt(get_pstr(c("XXX", "XXY")),
@@ -1102,14 +1071,9 @@ save(mdpost, file = nfn)
   ssv = c("klinefelter", "XXY")
   sfilt = get_pstr(ssv); dfilt = get_filt(sfilt, varl = "gender", nfilt = T)
   mdpost$disease = appendvar("disease", "klinefelter_syndrome", dfilt)
-
   mdpost$sex = ifelse(grepl(get_pstr(c("female", "f", "FEMALE")), md$gender), "F",
                       ifelse(grepl(get_pstr(c("male", "MALE", "m")), md$gender),
                              "M", "NA"))
-  table(mdpost$sex)
-  # female   male     NA
-  # 11678  10898  12784
-
   mdpost$predsex = md$predsex
 }
 
@@ -1132,22 +1096,17 @@ save(mdpost, file = nfn)
 #--------------------------------------
 # from prepd object
 {
-  load("data/prepmd.rda")
   mdpost$storage = "NA"
   prepd$storage = prepd$preparation
   prepd$storage = ifelse(!grepl(".*FFPE.*", prepd$storage),
                          "F;frozen", 
                          "FFPE;formalin_fixed_paraffin_embedded")
-  
   prepd = prepd[,c("gsm", "storage")]
   mf = mdpost[,c("gsm", "storage")]
-  
   prepd = rbind(prepd, mf[!mf$gsm %in% prepd$gsm,])
   prepd = prepd[order(match(prepd$gsm, mf$gsm)),]
   identical(prepd$gsm, mf$gsm)
-  
   mdpost$storage = prepd$storage
-  
 }
 
 save(mdpost, file = nfn)
