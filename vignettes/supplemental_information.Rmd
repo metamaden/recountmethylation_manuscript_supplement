@@ -6,6 +6,8 @@ author:
 - Reid F. Thompson
 - Kasper D. Hansen
 - Abhinav Nellore
+abstract:
+  This document contains supplemental information for the manuscript "Human methylome variation across Infinium 450K data on the Gene Expression Omnibus", including details about data access, aggregation, and analyses. Code and small data files are located at the [`recountmethylation-manuscript-supplement` GitHub repo](https://github.com/metamaden/recountmethylation_manuscript_supplement), and large data files are located at the [recount.bio website](https://recount.bio/data/recountmethylation_manuscript_supplement/data/). To access large datasets and view more analysis examples, consult the [`recountmethylation` R/Bioconductor package](https://github.com/metamaden/recountmethylation), including the `data_analyses` vignette.
 output:
   pdf_document:
     toc: yes
@@ -27,17 +29,13 @@ knitr::opts_chunk$set(echo = TRUE, eval = TRUE, warning = FALSE,
   message = FALSE)
 ```
 
-This document contains supplemental information for the manuscript "Human methylome variation across Infinium 450K data on the Gene Expression Omnibus". It contains information about data access, aggregation, and analyses. For additional information, consult documentation in the `recountmethylation` R/Bioconductor package. For details about data files and running scripts, consult the `inputs-and-outputs.Rmd` vignette.
-
 # Gene Expression Omnibus (GEO) data
-
-We identified DNAm array samples published to GEO and available in the GEO Data Sets database as of March 31, 2019.
 
 ## Sample identification
 
-We used the Entrez Utilities software (v.10.9) to quantify DNAm array samples available by year (Figures 1 and S1, see script `edirect_query.py`).
+We identified DNA methylation (DNAm) array samples published to the Gene Expression Omnibus (GEO) and available in the GEO Data Sets database as of March 31, 2019. We used the Entrez Utilities software (v.10.9) to quantify DNAm array sample availability by year and platform for 3 major Illumina BeadArray platforms (HM450K, HM27K, and EPIC/HM850K, Figures 1 and S1, see script `edirect_query.py`).
 
-## Sample data acquisition
+## Data acquisition
 
 We developed server software in Python to automate and version downloads of GSM IDATs and GSE SOFT files from the GEO Data Sets database. The software, `recount-methylation-server`, is freely available as a GitHub [repo](https://github.com/metamaden/recount-methylation-server).
 
@@ -74,7 +72,7 @@ and informative labels were retained. Care was taken to retain only sample-speci
 Preprocessed metadata were postprocessed by string pattern matching with regular expressions
 (see script `md_postprocessing.R`). Labels were applied hierarchically, wherein specific 
 labels have general labels applied automatically and separated by semicolons. Resulting labels 
-are all lowercase, and underscores replace spaces for applicable labels. For example, a label of "peripheral blood" is converted into "peripheral_blood;blood".
+are all lowercase, and underscores replace spaces for applicable labels. For example, a label of "Peripheral blood" is converted into "peripheral_blood;blood".
 
 ## Sample type predictions
 
@@ -98,7 +96,7 @@ for sample GSM937258 was:
 JSON files were run using a [fork](https://github.com/metamaden/MetaSRA-pipeline) 
 of the MetaSRA-pipeline software [repo](https://github.com/deweylab/MetaSRA-pipeline)
 (@bernstein_metasra:_2017). This produces mapped ontology term labels and predictions 
-for a series of sample types. The most likely sample types were retained under the 
+for a series of sample types (Figure S2). The most likely sample types were retained under the 
 "sampletype" column in the postprocessed metadata. For applicable samples, cell line 
 annotations were appended from the [Cellosaurus](https://web.expasy.org/cellosaurus/) 
 resource (see below).
@@ -135,11 +133,11 @@ Descriptions of the sample metadata columns (Table S1) are as follows:
 
 Several types of quality and summary metrics were generated from the DNAm assay data (Table S2). 
 These were used to determine metric performances, performance difference across preparations, 
-and study-wise sample sub-threshold frequencies (Figure 2).
+and study-wise sample sub-threshold frequencies (Figures 2, S3, and S4).
 
 ## BeadArray metrics
 
-Seventeen BeadArray metrics (Table S2, columns 3-19) were calculated from red and green signals (Table S3, see script `beadarray_cgctrlmetrics.R`). Metric formulae and thresholds were determined by consulting the platform documentation (@noauthor_illumina_2010, @noauthor_beadarray_nodate) and related functions in the `ewastools` package (@heiss_identifying_2018), with the following 
+Seventeen BeadArray metrics were calculated from red and green signals (Table S3, see script `beadarray_cgctrlmetrics.R`). Metric formulae and thresholds were determined by consulting the platform documentation (@noauthor_illumina_2010, @noauthor_beadarray_nodate) and related functions in the `ewastools` package (@heiss_identifying_2018), with the following 
 notes on calculations:
 
 * Use extension Grn A/T probes for system background.
@@ -150,36 +148,31 @@ of 1.
 * For Specificity I, use PM, MM 1-3 for green signal, 4-6 for red signal.
 * For Specificity II, use just probes S1-3, as probe S4 unavailable in control probe annotation.
 
-## Minfi quality metrics
-
-Additional quality metrics were calculated with the function `.buildControlMatrix450k` from the `minfi` package 
-(Table S2, columns 20-61, @fortin2014functional).
-
 ## Detection p-values
 
-The quantities of probes below 3 detection p-value cutoffs (0.01, 0.05, and 0.1) were determined (Table S2, columns 69-71). Detection p-values were calculated using the `detectionP` function from the `minfi` package.
+The quantities of probes below 3 detection p-value cutoffs (0.01, 0.05, and 0.1) were determined. Detection p-values were calculated using the `detectionP` function from the `minfi` package.
 
 ## Methylated and unmethylated log2 median signals
 
-Low log2 medians for M and U signal may indicate poor sample quality (@aryee_minfi:_2014). We calculated methylated (M) and unmethylated (U) signal log2 medians (Table S2, columns 72-73) from the raw/unnormalized signals.
+Low log2 medians for M and U signal may indicate poor sample quality (@aryee_minfi:_2014). We calculated methylated (M) and unmethylated (U) signal log2 medians from the raw/unnormalized signals.
 
 ## Genetic relatedness
 
-Sample genetic identities were calculated for GSE records using the `call_genotypes` function from the `ewastools` package (@heiss_identifying_2018). This method uses array probes mapping to high-frequency SNPs for the HM450K platform in a probabilistic model to determine whether samples share the same genetic identity. GSM IDs and number of GSM records sharing the same genetic identity from the same GSE record were determined (Table S2, columns 74-75).
+Sample genetic identities were calculated for GSE records using the `call_genotypes` function from the `ewastools` package (@heiss_identifying_2018). This method uses a probabilistic model with data from high-frequency SNPs probed by the HM450K platform to determine whether samples share the same genetic identity. GSM IDs from the same GSE record that shared genetic identity were determined.
 
 # Statistical analyses
 
-## Overview
+## Summary statistics and statistical tests
 
-In summary, we generated summary statistics using the `scikit-learn` Python package or base R functions, conducted statistical tests using base R, and visualized data using base R and the `ggplot2` R package. Unless noted otehrwise, p-value adjustments used the Benjamini-Hotchberg method. Group label enrichments were calculated with Binomial tests, and correlations used Spearman tests. 
+We obtained, read, and analyzed sample data programmatically using the R (v.4.0.0) and Python (v.3.7.0) languages in a CentOS 7 remote server environment. IDAT signals were read into `SummarizedExperiment` objects using the `minfi` package. Summary statistics were generated using base R functions. Statistical tests were performed using the `stats` (v.4.0.0) R package. Correlation tests used the Spearman method by setting `method = "spearman"` in the `cor.test` function. Analyses of variance (ANOVAs) were performed using the `anova` function. Label enrichments were tested using Binomial with the `binom.test` function, and T-tests used the `t.test` function. Principal component analyses (PCA) used the `prcomp` function. Unless noted otherwise, p-value adjustments used the Benjamini-Hotchberg method by setting `method = "BH"` in the `p.adjust` function. Plots used either base R, `ggplot2` (v.3.1.0), or `ComplexHeatmap` (v.1.99.5).
 
-## Scripts and code
+## Supplemental code and scripts
 
-Code to reproduce analyses are provided in the `R` amd `inst/scripts` directories. Descriptions of script inputs and outputs are summarized in the `inputs-and-outputs` vignette. For additional analysis examples, see the "data_analyses" vignette in the `recountmethylation` package.
+Code and small data files are [provided in the repo](https://github.com/metamaden/recountmethylation_manuscript_supplement), and large data files are [provided at the recount.bio website](https://recount.bio/data/recountmethylation_manuscript_supplement/data/). See the companion [`recountmethylation` R/Bioconductor package](https://github.com/metamaden/recountmethylation) for access to comprehensive databases of DNAm arrays and sample metadata and additional reproducible analyses.
 
 ## Principal component analyses
 
-Approximate array-wide principal component analysis was performed using noob-normalized Beta-values from autosomal probes. Feature hashing, or the "hashing trick" (@weinberger_feature_2010), was used as an intermediate dimensionality reduction step (see data files in `inst/extdata/pca_fh1k_all_gsm35k/` directory). This was implemented with the following Python function:
+Approximate array-wide principal component analysis was performed using noob-normalized Beta-values from autosomal probes. Feature hashing, or the "hashing trick" (@weinberger_feature_2010), was used as an intermediate dimensionality reduction step (see data files in [`pca_fh1k_all_gsm35k.zip` at recount.bio](https://recount.bio/data/recountmethylation_manuscript_supplement/data/)). Whole-array Beta-value matrices (>480,000 columns) were collapsed into 1,000 hashed feature columns before cluster analysis. This was implemented with the following `feature_hash` Python function, where the `arr` argument is the sample data and `target_dim=1000` specifies the target hashed feature dimension:
 
 ```
 def feature_hash(arr, target_dim=1000):
@@ -200,39 +193,17 @@ Yearly GSM and GSE record quantities were obtained by platform using the Entrez 
 
 ## Metadata concordance analyses and plot
 
-For mined and predicted sex, we calculated the fraction concordance. For mined and predicted age, we used ANOVAs
+For sex and age, we calculated concordance between samples with both the mined and predicted labels available (Table 1). For mined and predicted sex, we calculated the fraction concordances. For mined and predicted age, we used ANOVAs
 to calculate variance percentages and p-values for multivariate models including GSE ID, cancer status, and sex.
+
 Predicted age and chronological age were regressed to calculate R-squared values and correlated using Spearman's test. These were plotted with the regression model using `ggplot2` (Figure 1b). See example 1 in the `data_analyses` vignette of the `recountmethylation` package for details.
-
-## Analyzing control metric signal
-
-We assessed control metric signal (BeadArray metrics and methylated or unmethylated log2 medians) using base R and certain packages. We calculated metadata term enrichment for the `tissue` and `disease` annotations using the Bimodal test with multiple testing adjustment using the Benjamini-Hotchberg method (p-adjusted < 1e-3 significance). Significance of signal differences between storage types (frozen and FFPE) were calculated using T-tests. Stacked barplots, confidence intervals, and violin plots in Figure 2 were generated using `ggplot2`. Study-wise sub-threshold frequency heatmaps were generated using `ComplexHeatmap`.
-
-## Analyzing PCA across samples and probes
-
-We performed PCA using the feature-hashed probe datasets and the `prcomp` R function with default arguments (see above). Plots were generated using the `factoextra` package and base R.
 
 ## DNAm variability analyses in 7 tissues
 
-Samples were categorized as being from 1 of 7 tissues by manual review of studies (Table S6). 
-Likely cancers or samples from cancer patients were removed from consideration. We removed samples 
-occurring in the bottom 5th quantile for *both* methylated and unmethylated log2 median signal,
-samples failing at least 1 BeadArray quality metric, and likely replicates or samples with shared
-genetic identity (see above, Table S2). After metadata and quality filters, analysis was restricted 
-to the 7 remaining tissues with at least 100 remaining samples from at least 2 studies (Figure S5b).
+Samples were categorized as being from 1 of 7 tissues (adipose, buccal, blood, brain, liver, nasal, or sperm) by manual review of sample and study records (Table S6, see [`gsmid-nct7.csv` in repo](https://github.com/metamaden/recountmethylation_manuscript_supplement/tree/master/inst/extdata)). Likely cancers or samples from cancer patients were removed from consideration. We removed samples occurring in the bottom 5th quantile for *both* methylated and unmethylated log2 median signal, samples failing at least 1 BeadArray quality metric, and likely replicates or samples with shared genetic identity (see above, Table S2). After metadata and quality filters, analysis was restricted to the 7 remaining tissues having at least 100 total samples from at least 2 studies (Figure S5b).
 
-Because few targeted studies sampled across tissues and because tissue groups explained less variation
-than study/GSE ID, we performed preprocessing within tissue groups in parallel. Linear adjustment on 
-study ID was performed using the `removeBatchEffect` function from the `limma` (v.3.39.12) package. 
-Probes were then removed if they showed significant (p-adj. < 0.01) and substantial (> 10\%) variance 
-contributions in ANOVAs. ANOVA models consisted of GSE ID and DNAm model predictions for age, sex, and 
-blood cell fractions (see above, Table S1). This filter removed 8 - 40\% of autosomal probes across the 
-7 tissues, respectively (Figure S5c).
+Because few targeted studies sampled across tissues and because tissue groups explained less variation than study/GSE ID, we performed preprocessing within tissue groups in parallel. Linear adjustment on study ID was performed using the `removeBatchEffect` function from the `limma` (v.3.39.12) package. Probes were then removed if they showed significant (p-adj. < 0.01) and substantial (>= 10\%) variance contributions from variables in ANOVAs (see files in [`anova_results.zip` directory at recount.bio](https://recount.bio/data/recountmethylation_manuscript_supplement/data/)). ANOVA covariates included GSE ID and DNAm model predictions for age, sex, and blood cell fractions (see above, Table S1). This filter removed 8 - 40\% of autosomal probes across the 7 tissues, respectively (Figure S5c).
 
-Probes with low variance across all 7 tissues were identified by taking the union of probes in the lowest
-5th quantile variance for each tissue (Table S7, see script ``). The top 2,000 probes with tissue-specific high 
-variances (14,000 probes total, Table S8) were selected from an absolute quantile filter and a binned quantile 
-filter, where probes showed the highest 5th quantile variance and occurred in just 1 of the 7 tissue groups for 
-each method (see script ``).
+Probes with low variance across all 7 tissues were identified by taking the union of probes in the lowest 5th quantile variance (both in absolute and mean Beta-value bins) for each tissue (Figure S5a, Table S7). The top 2,000 probes with tissue-specific high variances (14,000 probes total, Table S8) were selected from an absolute quantile filter and a binned quantile filter, where probes showed the highest 5th quantile variance and occurred in just 1 of the 7 tissue groups for each method (see script [`get_txmvp_2methods.R` in the repo](https://github.com/metamaden/recountmethylation_manuscript_supplement/tree/master/inst/scripts)).
 
 # Works cited
